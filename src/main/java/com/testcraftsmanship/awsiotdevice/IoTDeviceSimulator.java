@@ -2,6 +2,7 @@ package com.testcraftsmanship.awsiotdevice;
 
 import com.amazonaws.regions.Regions;
 import com.testcraftsmanship.awsiotdevice.device.IoTDevice;
+import com.testcraftsmanship.awsiotdevice.device.IoTDeviceState;
 import com.testcraftsmanship.awsiotdevice.iotsettings.DeviceRunnable;
 import com.testcraftsmanship.awsiotdevice.iotsettings.IoTDeviceBehavior;
 
@@ -19,21 +20,47 @@ public class IoTDeviceSimulator extends IoTDeviceBehavior implements DeviceRunna
         this.keyPasswordSsmParamValue = getSsmParameterValue(awsSsmRegion, keyPasswordSsmParam);
     }
 
+    /**
+     * Runs the IoT device simulator. After that method is executed device is listening and able to perform publishing
+     * on desired topic.
+     */
     public void start() {
-        iotDevice = new IoTDevice(mqttClientEndpoint, keyStoreSsmParamValue, keyPasswordSsmParamValue);
-        iotDevice.publishMessageTo(getPublishedMessagePayload(), getPublishedMessageTopic());
-        iotDevice.subscribeTriggerTopicCondition(getSubscribedMessageTopic());
-        iotDevice.subscribeTriggerMessageCondition(getSubscribedMessagePayload());
-        iotDevice.subscribeTo(getDeviceSubscriptionTopic());
-        iotDevice.startSimulation();
+        if (iotDeviceIsNotRunning()) {
+            iotDevice = new IoTDevice(mqttClientEndpoint, keyStoreSsmParamValue, keyPasswordSsmParamValue);
+            iotDevice.publishMessageTo(getPublishedMessagePayload(), getPublishedMessageTopic());
+            iotDevice.subscribeTriggerTopicCondition(getSubscribedMessageTopic());
+            iotDevice.subscribeTriggerMessageCondition(getSubscribedMessagePayload());
+            iotDevice.subscribeTo(getDeviceSubscriptionTopic());
+            iotDevice.startSimulation();
+        }
     }
 
+    /**
+     * Stops the IoT device simulator.
+     */
     public void stop() {
-        iotDevice.stopSimulation();
+        if (iotDevice.getState() == IoTDeviceState.RUNNING) {
+            iotDevice.stopSimulation();
+        }
     }
 
+    /**
+     * Perform publication of defined message to defined MQTT topic
+     */
     public void publish() {
         iotDevice.publishMessage();
     }
 
+    /**
+     * Method returns true when expected message reaches the expected topic
+     *
+     * @return information whether expected message reaches correct topic
+     */
+    public boolean doesExpectedMessageReachedSubscribedTopic() {
+        return iotDevice.isExpectedMessagePublished();
+    }
+
+    private boolean iotDeviceIsNotRunning() {
+        return iotDevice == null || iotDevice.getState() != IoTDeviceState.RUNNING;
+    }
 }
