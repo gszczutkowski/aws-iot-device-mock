@@ -57,7 +57,7 @@ public class IoTDeviceSimulator extends IoTDeviceBehavior implements DeviceRunna
      * @return information whether expected message reaches correct topic
      */
     public boolean doesExpectedMessageReachedSubscribedTopic() {
-        return iotDevice.isExpectedMessagePublished();
+        return iotDevice.isExpectedMessageOnSubscribedTopic();
     }
 
     private boolean iotDeviceIsNotRunning() {

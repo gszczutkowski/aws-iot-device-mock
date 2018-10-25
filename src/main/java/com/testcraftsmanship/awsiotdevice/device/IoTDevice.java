@@ -57,7 +57,6 @@ public class IoTDevice {
                 if (isDeviceRespondingOnMessage()) {
                     ioTDeviceListener = new IoTDeviceListener(iotDeviceData,
                             mqttClientEndpoint, keyStoreSsmParamValue, keyPasswordSsmParamValue);
-
                     iotActionsTrigger.subscribe(ioTDeviceListener);
                     ioTDeviceListener.connectPublisher();
                     state = IoTDeviceState.RUNNING;
@@ -96,21 +95,20 @@ public class IoTDevice {
     }
 
     public void publishMessage() {
-        if (canPublishOnDemand()) {
-            try {
-                iotActionsTrigger.publish(iotDeviceData.getPublicationTopic(), iotDeviceData.getPublicationMessage());
-                LOGGER.info("Publishing message {} on topic: {}",
-                        iotDeviceData.getPublicationMessage(), iotDeviceData.getPublicationTopic());
-            } catch (AWSIotException e) {
-                throw new AwsException("Unable to publish message to topic: " + iotDeviceData.getPublicationTopic(), e);
-            }
-        } else {
+        if (!canPublishOnDemand()) {
             throw new IllegalStateException(
-                    "Device has not defined publication message or topic or publication message is parametrized");
+                    "Device has not defined publication message/topic or publication message is parametrized.");
+        }
+        try {
+            iotActionsTrigger.publish(iotDeviceData.getPublicationTopic(), iotDeviceData.getPublicationMessage());
+            LOGGER.info("Publishing message {} on topic: {}",
+                    iotDeviceData.getPublicationMessage(), iotDeviceData.getPublicationTopic());
+        } catch (AWSIotException e) {
+            throw new AwsException("Unable to publish message to topic: " + iotDeviceData.getPublicationTopic(), e);
         }
     }
 
-    public boolean isExpectedMessagePublished() {
+    public boolean isExpectedMessageOnSubscribedTopic() {
         if (isDeviceSubscribedOnTopic()) {
             return ioTDeviceListener.expectedMessageHasBeenPublished();
         } else {

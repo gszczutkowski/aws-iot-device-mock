@@ -50,6 +50,48 @@ public class MessageParserTest {
     }
 
     @Test
+    public void parserShouldUpdateParamInArray() throws PayloadMappingException {
+        final String valueToBeUpdated = "e788e700-7e13-4a12-852e-cbfd830dfc2d";
+        final String mask = "{'uuid':'{id}', 'data':{'id': 10, 'reason': 'update'}}";
+        final String subscribeMessage = "{'uuid':'" + valueToBeUpdated + "', 'data': {'id': 10, 'reason': 'update'}}";
+        final String publishMessage = "{'device_list': [{'id':'{id}', 'response': 'ok'}]}";
+        final String expectedPublishMessage = "{'device_list': [ {'id': " + valueToBeUpdated + ", 'response': 'ok'}]}";
+
+        MessageParser messageParser = new MessageParser(mask, subscribeMessage, true);
+        JSONObject updatedPublishMessage = messageParser.updateJsonParamsWithValues(publishMessage);
+
+        JSONAssert.assertEquals(expectedPublishMessage, updatedPublishMessage, true);
+    }
+
+    @Test
+    public void parserShouldGetParamFromArray() throws PayloadMappingException {
+        final String valueToBeUpdated = "e788e700-7e13-4a12-852e-cbfd830dfc2d";
+        final String mask = "{'heater':[{'uuid':'{id}', 'data':{'id': 10, 'reason': 'update'}}]}";
+        final String subscribeMessage = "{'heater':[{'uuid':'" + valueToBeUpdated + "', 'data': {'id': 10, 'reason': 'update'}}]}";
+        final String publishMessage = "{'device_list': [{'id':'{id}', 'response': 'ok'}]}";
+        final String expectedPublishMessage = "{'device_list': [ {'id': " + valueToBeUpdated + ", 'response': 'ok'}]}";
+
+        MessageParser messageParser = new MessageParser(mask, subscribeMessage, true);
+        JSONObject updatedPublishMessage = messageParser.updateJsonParamsWithValues(publishMessage);
+
+        JSONAssert.assertEquals(expectedPublishMessage, updatedPublishMessage, true);
+    }
+
+    @Test
+    public void parserShouldGetParamFromArrayWhenNoStrict() throws PayloadMappingException {
+        final String valueToBeUpdated = "e788e700-7e13-4a12-852e-cbfd830dfc2d";
+        final String mask = "{'heater':[{'uuid':'{id}'}]}";
+        final String subscribeMessage = "{'heater':[{'uuid':'" + valueToBeUpdated + "', 'data': {'id': 10, 'reason': 'update'}}]}";
+        final String publishMessage = "{'device_list': [{'id':'{id}', 'response': 'ok'}]}";
+        final String expectedPublishMessage = "{'device_list': [ {'id': " + valueToBeUpdated + ", 'response': 'ok'}]}";
+
+        MessageParser messageParser = new MessageParser(mask, subscribeMessage, false);
+        JSONObject updatedPublishMessage = messageParser.updateJsonParamsWithValues(publishMessage);
+
+        JSONAssert.assertEquals(expectedPublishMessage, updatedPublishMessage, true);
+    }
+
+    @Test
     public void parserShouldUpdateParamInNonStrictMode() throws PayloadMappingException {
         final String valueToBeUpdated = "e788e700-7e13-4a12-852e-cbfd830dfc2d";
         final String mask = "{'uuid':'{id}'}";

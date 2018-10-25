@@ -1,5 +1,6 @@
 package com.testcraftsmanship.awsiotdevice.parser;
 
+import org.json.JSONArray;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -14,6 +15,10 @@ import static com.testcraftsmanship.awsiotdevice.utils.StringOperations.minimize
 public class MessageParser {
     private static final Logger LOGGER = LoggerFactory.getLogger(MessageParser.class);
     private static final String JSON_VALUE_PARAM_REGEXP = "^\\{(.*?)\\}$";
+    private static final String MASK_IN_JSON_REGEXP = ":\"\\{.*?\\}\"";
+    private static final String ANY_CHARS_FROM_BEGINNING_REGEXP = "^.*";
+    private static final String ANY_CHARS_TO_THE_END_REGEXP = ".*$";
+
     private final Map<String, JsonValue> jsonParamsWithValues;
 
     public MessageParser(String jsonParserMask, String jsonSubscribedMessage, boolean strict)
@@ -45,11 +50,11 @@ public class MessageParser {
 
     public static boolean containsMaskParams(String jsonMessage) {
         String standardizedMessage = new JSONObject(jsonMessage).toString();
-        return doesStringContainsRegexp(standardizedMessage, ":\"\\{.*?\\}\"");
+        return doesStringContainsRegexp(standardizedMessage, MASK_IN_JSON_REGEXP);
     }
 
     private static boolean doesStringContainsRegexp(String text, String regexp) {
-        return text.matches("^.*" + regexp + ".*$");
+        return text.matches(ANY_CHARS_FROM_BEGINNING_REGEXP + regexp + ANY_CHARS_TO_THE_END_REGEXP);
     }
 
     private static String getParamValue(JsonValue jsonValue) {
@@ -73,9 +78,15 @@ public class MessageParser {
             return JsonValueType.BOOLEAN;
         } else if (object instanceof JSONObject) {
             return JsonValueType.OBJECT;
+        } else if (object instanceof JSONArray) {
+            return JsonValueType.ARRAY;
         } else {
             throw new IllegalArgumentException("Can't recognise the Json value type in the passed object");
         }
+    }
+
+    private boolean isArray(Object object) {
+        return getValueType(object).equals(JsonValueType.ARRAY);
     }
 
     private boolean isJsonObject(Object object) {
@@ -100,8 +111,26 @@ public class MessageParser {
                 JSONObject jsonMessageObject = (JSONObject) messagePart;
                 JSONObject jsonMaskObject = (JSONObject) maskPart;
                 attributesWithValues.putAll(getParamsValuesFromMessage(jsonMessageObject, jsonMaskObject, strict));
+            } else if (isArray(messagePart) && isArray(maskPart)) {
+                attributesWithValues.putAll(extractParamFromArray((JSONArray) messagePart, (JSONArray) maskPart, strict));
             } else {
                 attributesWithValues.putAll(extractParamFromPart(messagePart, maskPart));
+            }
+        }
+        return attributesWithValues;
+    }
+
+    private Map<String, JsonValue> extractParamFromArray(JSONArray jsonMessageArray, JSONArray jsonMaskArray, boolean strict)
+            throws PayloadMappingException {
+        if (strict && jsonMaskArray.length() != jsonMessageArray.length()) {
+            throw new PayloadMappingException("Arrays length in mask and message are different.");
+        }
+
+        Map<String, JsonValue> attributesWithValues = new HashMap<>();
+        for (int i = 0; i < jsonMaskArray.length(); i++) {
+            if (jsonMaskArray.get(i) instanceof JSONObject) {
+                attributesWithValues = getParamsValuesFromMessage(
+                        (JSONObject) jsonMessageArray.get(i), (JSONObject) jsonMaskArray.get(i), strict);
             }
         }
         return attributesWithValues;
