@@ -51,28 +51,28 @@ public class IoTDevice {
     }
 
     public void startSimulation() {
+        if (iotActionsTrigger.getConnectionStatus().equals(AWSIotConnectionStatus.CONNECTED)) {
+            LOGGER.info("IoT Device with id {} is already running.", iotActionsTrigger.getClientId());
+            return;
+        }
         try {
-            if (!iotActionsTrigger.getConnectionStatus().equals(AWSIotConnectionStatus.CONNECTED)) {
-                iotActionsTrigger.connect();
-                if (isDeviceRespondingOnMessage()) {
-                    ioTDeviceListener = new IoTDeviceListener(iotDeviceData,
-                            mqttClientEndpoint, keyStoreSsmParamValue, keyPasswordSsmParamValue);
-                    iotActionsTrigger.subscribe(ioTDeviceListener);
-                    ioTDeviceListener.connectPublisher();
-                    state = IoTDeviceState.RUNNING;
-                    LOGGER.info("Start IoT Device simulation in Subscribe-Publish mode");
-                } else if (isDevicePublishingOnly()) {
-                    state = IoTDeviceState.RUNNING;
-                    LOGGER.info("Start IoT Device simulation in Publish mode");
-                } else if (isDeviceSubscribedOnly()) {
-                    ioTDeviceListener = new IoTDeviceListener(iotDeviceData,
-                            mqttClientEndpoint, keyStoreSsmParamValue, keyPasswordSsmParamValue);
-                    iotActionsTrigger.subscribe(ioTDeviceListener);
-                    state = IoTDeviceState.RUNNING;
-                    LOGGER.info("Start IoT Device simulation in Subscribing mode");
-                }
-            } else {
-                LOGGER.info("IoT Device with id {} is already running.", iotActionsTrigger.getClientId());
+            iotActionsTrigger.connect();
+            if (isDeviceRespondingOnMessage()) {
+                ioTDeviceListener = new IoTDeviceListener(iotDeviceData,
+                        mqttClientEndpoint, keyStoreSsmParamValue, keyPasswordSsmParamValue);
+                iotActionsTrigger.subscribe(ioTDeviceListener);
+                ioTDeviceListener.connectPublisher();
+                state = IoTDeviceState.RUNNING;
+                LOGGER.info("Start IoT Device simulation in Subscribe-Publish mode");
+            } else if (isDevicePublishingOnly()) {
+                state = IoTDeviceState.RUNNING;
+                LOGGER.info("Start IoT Device simulation in Publish mode");
+            } else if (isDeviceSubscribedOnly()) {
+                ioTDeviceListener = new IoTDeviceListener(iotDeviceData,
+                        mqttClientEndpoint, keyStoreSsmParamValue, keyPasswordSsmParamValue);
+                iotActionsTrigger.subscribe(ioTDeviceListener);
+                state = IoTDeviceState.RUNNING;
+                LOGGER.info("Start IoT Device simulation in Subscribing mode");
             }
         } catch (AWSIotException e) {
             throw new AwsException("Exception while stopping IoT Device simulator", e);

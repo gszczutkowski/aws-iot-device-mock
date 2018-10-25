@@ -34,41 +34,29 @@ public class IoTDeviceListener extends AWSIotTopic {
 
     @Override
     public synchronized void onMessage(AWSIotMessage message) {
-
         if (MessageParser.containsMaskParams(iotDeviceData.getSubscribeMessageCondition()) && publicationConditionsMet()) {
             try {
                 MessageParser messageParser = new MessageParser(iotDeviceData.getSubscribeMessageCondition(),
                         message.getStringPayload(), true);
                 String updatedPublicationMessage = messageParser
                         .updateJsonParamsWithValues(iotDeviceData.getPublicationMessage()).toString();
-                iotPublisher.publish(iotDeviceData.getPublicationTopic(), updatedPublicationMessage);
-                LOGGER.info("Message {} published to topic {}",
-                        updatedPublicationMessage, iotDeviceData.getPublicationTopic());
-                expectedInformationReceived = true;
+                publishIotDeviceData(iotDeviceData.getPublicationTopic(), updatedPublicationMessage);
             } catch (PayloadMappingException e) {
                 LOGGER.warn(e.getMessage());
-            } catch (AWSIotException e) {
-                throw new AwsException("Exception while publishing message from IoTGateway", e);
             }
         } else if (subscriptionConditionsMet(message) && publicationConditionsMet()) {
             LOGGER.info("Subscribed on topic {}, has received the message {}",
                     message.getTopic(), minimize(message.getStringPayload()));
-            expectedInformationReceived = true;
-            try {
-                iotPublisher.publish(iotDeviceData.getPublicationTopic(), iotDeviceData.getPublicationMessage());
-                LOGGER.info("Message {} published to topic {}",
-                        minimize(iotDeviceData.getPublicationMessage()), iotDeviceData.getPublicationTopic());
-            } catch (AWSIotException e) {
-                throw new AwsException("Exception while publishing message from IoTGateway", e);
-            }
+            publishIotDeviceData();
         } else if (subscriptionConditionsMet(message) && !publicationConditionsMet()) {
             LOGGER.info("Subscribed on topic {}, has received the message {}",
                     message.getTopic(), minimize(message.getStringPayload()));
-            expectedInformationReceived = true;
         } else {
             LOGGER.warn("Not handled message {} received on topic {}.",
                     minimize(message.getStringPayload()), message.getTopic());
+            return;
         }
+        expectedInformationReceived = true;
     }
 
     /**
@@ -144,6 +132,20 @@ public class IoTDeviceListener extends AWSIotTopic {
         }
 
         return formattedExpectedPayload.equals(formattedActualPayload);
+    }
+
+    private void publishIotDeviceData(String topic, String payload) {
+        try {
+            iotPublisher.publish(topic, payload);
+            LOGGER.info("Message {} published to topic {}",
+                    minimize(payload), topic);
+        } catch (AWSIotException e) {
+            throw new AwsException("Exception while publishing message from IoTGateway", e);
+        }
+    }
+
+    private void publishIotDeviceData() {
+        publishIotDeviceData(iotDeviceData.getPublicationTopic(), iotDeviceData.getPublicationMessage());
     }
 }
 
