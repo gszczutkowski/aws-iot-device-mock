@@ -4,29 +4,33 @@ import com.amazonaws.services.iot.client.AWSIotConnectionStatus;
 import com.amazonaws.services.iot.client.AWSIotException;
 import com.amazonaws.services.iot.client.AWSIotMqttClient;
 import com.testcraftsmanship.awsiotdevice.aws.AwsException;
-import com.testcraftsmanship.awsiotdevice.utils.StringGenerator;
+import com.testcraftsmanship.awsiotdevice.parser.MessageParser;
+import com.testcraftsmanship.awsiotdevice.utils.StringOperations;
+import lombok.Getter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class IoTDevice {
     private static final Logger LOGGER = LoggerFactory.getLogger(IoTDevice.class);
     private AWSIotMqttClient iotActionsTrigger;
-    private IoTDeviceSubscriber iotSubscriptionHandler;
+    private IoTDeviceListener ioTDeviceListener;
     private IoTDeviceData iotDeviceData;
     private final String mqttClientEndpoint;
     private final String keyStoreSsmParamValue;
     private final String keyPasswordSsmParamValue;
+    @Getter
+    private IoTDeviceState state;
 
     public IoTDevice(String clientEndpoint, String keyStoreSsmParamValue, String keyPasswordSsmParamValue) {
-        String awsClientId = StringGenerator.generateAwsClientId();
+        String awsClientId = StringOperations.generateAwsClientId();
         iotDeviceData = new IoTDeviceData();
         this.mqttClientEndpoint = clientEndpoint;
         this.keyStoreSsmParamValue = keyStoreSsmParamValue;
         this.keyPasswordSsmParamValue = keyPasswordSsmParamValue;
-        this.iotActionsTrigger = new AWSIotMqttClient(clientEndpoint, StringGenerator.generateAwsClientId(),
+        this.iotActionsTrigger = new AWSIotMqttClient(clientEndpoint, awsClientId,
                 keyStoreSsmParamValue,
                 keyPasswordSsmParamValue);
-        LOGGER.info("Created IoTDeviceSubscriber with client id: {}", awsClientId);
+        LOGGER.info("Created IoTDeviceListener with client id: {}", awsClientId);
     }
 
     public void publishMessageTo(String message, String topic) {
@@ -47,19 +51,28 @@ public class IoTDevice {
     }
 
     public void startSimulation() {
+        if (iotActionsTrigger.getConnectionStatus().equals(AWSIotConnectionStatus.CONNECTED)) {
+            LOGGER.info("IoT Device with id {} is already running.", iotActionsTrigger.getClientId());
+            return;
+        }
         try {
-            if (!iotActionsTrigger.getConnectionStatus().equals(AWSIotConnectionStatus.CONNECTED)) {
-                iotActionsTrigger.connect();
-            }
-            if (isDeviceRespondingOnTopic()) {
-                iotSubscriptionHandler = new IoTDeviceSubscriber(iotDeviceData,
+            iotActionsTrigger.connect();
+            if (isDeviceRespondingOnMessage()) {
+                ioTDeviceListener = new IoTDeviceListener(iotDeviceData,
                         mqttClientEndpoint, keyStoreSsmParamValue, keyPasswordSsmParamValue);
-
-                iotActionsTrigger.subscribe(iotSubscriptionHandler);
-                iotSubscriptionHandler.connectPublisher();
+                iotActionsTrigger.subscribe(ioTDeviceListener);
+                ioTDeviceListener.connectPublisher();
+                state = IoTDeviceState.RUNNING;
                 LOGGER.info("Start IoT Device simulation in Subscribe-Publish mode");
             } else if (isDevicePublishingOnly()) {
+                state = IoTDeviceState.RUNNING;
                 LOGGER.info("Start IoT Device simulation in Publish mode");
+            } else if (isDeviceSubscribedOnly()) {
+                ioTDeviceListener = new IoTDeviceListener(iotDeviceData,
+                        mqttClientEndpoint, keyStoreSsmParamValue, keyPasswordSsmParamValue);
+                iotActionsTrigger.subscribe(ioTDeviceListener);
+                state = IoTDeviceState.RUNNING;
+                LOGGER.info("Start IoT Device simulation in Subscribing mode");
             }
         } catch (AWSIotException e) {
             throw new AwsException("Exception while stopping IoT Device simulator", e);
@@ -68,12 +81,13 @@ public class IoTDevice {
 
     public void stopSimulation() {
         try {
-            if (iotSubscriptionHandler != null) {
-                iotSubscriptionHandler.disconnectPublisher();
+            if (ioTDeviceListener != null) {
+                ioTDeviceListener.disconnectPublisher();
             }
             if (iotActionsTrigger.getConnectionStatus().equals(AWSIotConnectionStatus.CONNECTED)) {
                 iotActionsTrigger.disconnect();
             }
+            state = IoTDeviceState.STOPPED;
             LOGGER.info("IoT Device simulation stopped");
         } catch (AWSIotException e) {
             throw new AwsException("Exception while stopping IoT Device simulator", e);
@@ -81,24 +95,33 @@ public class IoTDevice {
     }
 
     public void publishMessage() {
+        if (!canPublishOnDemand()) {
+            throw new IllegalStateException(
+                    "Device has not defined publication message/topic or publication message is parametrized.");
+        }
         try {
             iotActionsTrigger.publish(iotDeviceData.getPublicationTopic(), iotDeviceData.getPublicationMessage());
-            LOGGER.info("Triggered publishing to topic: {}", iotDeviceData.getPublicationTopic());
+            LOGGER.info("Publishing message {} on topic: {}",
+                    iotDeviceData.getPublicationMessage(), iotDeviceData.getPublicationTopic());
         } catch (AWSIotException e) {
             throw new AwsException("Unable to publish message to topic: " + iotDeviceData.getPublicationTopic(), e);
         }
     }
 
-    private boolean isDeviceSubscribedOnTopic() {
-        return iotDeviceData.getDeviceSubscriptionTopic() != null;
+    public boolean isExpectedMessageOnSubscribedTopic() {
+        if (isDeviceSubscribedOnTopic()) {
+            return ioTDeviceListener.expectedMessageHasBeenPublished();
+        } else {
+            throw new IllegalStateException("Device is not subscribed to any topic.");
+        }
     }
 
-    private boolean isDevicePublishingOnTopic() {
-        return iotDeviceData.getPublicationTopic() != null
-                && iotDeviceData.getPublicationMessage() != null;
+    private boolean canPublishOnDemand() {
+        return (isDeviceRespondingOnMessage() || isDevicePublishingOnly())
+                && !MessageParser.containsMaskParams(iotDeviceData.getPublicationMessage());
     }
 
-    private boolean isDeviceRespondingOnTopic() {
+    private boolean isDeviceRespondingOnMessage() {
         return isDeviceSubscribedOnTopic() && isDevicePublishingOnTopic();
     }
 
@@ -108,5 +131,14 @@ public class IoTDevice {
 
     private boolean isDeviceSubscribedOnly() {
         return isDeviceSubscribedOnTopic() && !isDevicePublishingOnTopic();
+    }
+
+    private boolean isDeviceSubscribedOnTopic() {
+        return iotDeviceData.getDeviceSubscriptionTopic() != null;
+    }
+
+    private boolean isDevicePublishingOnTopic() {
+        return iotDeviceData.getPublicationTopic() != null
+                && iotDeviceData.getPublicationMessage() != null;
     }
 }

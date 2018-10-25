@@ -14,6 +14,10 @@ public class IoTDeviceData {
     private String subscribeMessageCondition = null;
 
     public void setPublicationMessage(String message) {
-        publicationMessage = new JSONObject(message).toString();
+        if (message != null) {
+            publicationMessage = new JSONObject(message).toString();
+        } else {
+            publicationMessage = null;
+        }
     }
 }

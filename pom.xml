@@ -19,10 +19,17 @@
         <aws.sdk.version>1.11.344</aws.sdk.version>
         <aws.iot.sdk.version>1.1.1</aws.iot.sdk.version>
 
+        <junit.version>4.12</junit.version>
+        <assertj.version>3.11.1</assertj.version>
+        <json.assert.version>1.5.0</json.assert.version>
+
+
         <compiler.plugin.version>3.0</compiler.plugin.version>
         <dependency.updates.plugin.version>2.5</dependency.updates.plugin.version>
         <dependency.check.plugin.version>2.0.4</dependency.check.plugin.version>
         <checkstyle.plugin.version>3.0.0</checkstyle.plugin.version>
+        <pmd.plugin.version>3.10.0</pmd.plugin.version>
+        <jxr.plugin.version>3.0.0</jxr.plugin.version>
     </properties>
 
     <build>
@@ -81,6 +88,21 @@
                     <configLocation>config/checkstyle/check-style-config.xml</configLocation>
                 </configuration>
             </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-pmd-plugin</artifactId>
+                <version>${pmd.plugin.version}</version>
+                <executions>
+                    <execution>
+                        <id>pmd-check</id>
+                        <phase>validate</phase>
+                        <goals>
+                            <goal>check</goal>
+                            <goal>cpd-check</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
         </plugins>
     </build>
 
@@ -120,5 +142,44 @@
             <artifactId>json</artifactId>
             <version>${json.version}</version>
         </dependency>
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <version>${junit.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.assertj</groupId>
+            <artifactId>assertj-core</artifactId>
+            <version>${assertj.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.skyscreamer</groupId>
+            <artifactId>jsonassert</artifactId>
+            <version>${json.assert.version}</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
+    <reporting>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-pmd-plugin</artifactId>
+                <version>${pmd.plugin.version}</version>
+                <configuration>
+                    <linkXref>true</linkXref>
+
+                    <sourceEncoding>utf-8</sourceEncoding>
+                    <minimumTokens>100</minimumTokens>
+                    <targetJdk>${java.version}</targetJdk>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jxr-plugin</artifactId>
+                <version>${jxr.plugin.version}</version>
+            </plugin>
+        </plugins>
+    </reporting>
 </project>

@@ -22,6 +22,16 @@ public class IoTDeviceBehavior implements DeviceSpecification, PublicationMessag
         return this;
     }
 
+    public String getDeviceSubscriptionTopic() {
+        if (deviceSubscriptionTopic != null) {
+            return deviceSubscriptionTopic;
+        } else if (subscribedMessageTopic != null) {
+            return subscribedMessageTopic;
+        } else {
+            throw new IllegalStateException("Subscription topic has not been set");
+        }
+    }
+
     @Override
     public DeviceSpecification subscribeTo(String topic) {
         this.deviceSubscriptionTopic = topic;
@@ -38,6 +48,11 @@ public class IoTDeviceBehavior implements DeviceSpecification, PublicationMessag
     public PublicationMessageSpecification publishMessageBody(String body) {
         this.publishedMessagePayload = body;
         return this;
+    }
+
+    @Override
+    public PublicationMessageSpecification inform() {
+        return null;
     }
 
     @Override

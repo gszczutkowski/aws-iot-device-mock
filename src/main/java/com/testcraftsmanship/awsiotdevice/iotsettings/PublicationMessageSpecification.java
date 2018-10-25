@@ -4,4 +4,6 @@ public interface PublicationMessageSpecification {
     PublicationMessageSpecification publishTo(String topic);
 
     PublicationMessageSpecification publishMessageBody(String body);
+
+    PublicationMessageSpecification inform();
 }

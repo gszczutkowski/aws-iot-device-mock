@@ -2,8 +2,8 @@
 
 AWS-IoT-Device-Mock is a java library which can mock AWS IoT devices connected to MQTT in your tests. You can easily define behaviors of this device:
 
-  - publish defined message to mqtt topic when trigered
-  - publish defined message when other defined message reach other mqtt topic
+  - publish defined message to MQTT topic when triggered
+  - publish defined message when other defined message reach other MQTT topic
 
 ### How to use it
 
