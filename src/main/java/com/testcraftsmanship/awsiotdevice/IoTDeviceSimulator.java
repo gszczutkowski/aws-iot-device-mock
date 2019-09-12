@@ -31,6 +31,7 @@ public class IoTDeviceSimulator extends IoTDeviceBehavior implements DeviceRunna
             iotDevice.subscribeTriggerTopicCondition(getSubscribedMessageTopic());
             iotDevice.subscribeTriggerMessageCondition(getSubscribedMessagePayload());
             iotDevice.subscribeTo(getDeviceSubscriptionTopic());
+            iotDevice.setResponseMessageDelayInSeconds(getResponseDelayInSeconds());
             iotDevice.startSimulation();
         }
     }

@@ -50,6 +50,10 @@ public class IoTDevice {
         iotDeviceData.setSubscribeTopicCondition(topicCondition);
     }
 
+    public void setResponseMessageDelayInSeconds(int delayInSeconds) {
+        iotDeviceData.setResponseMessageDelayInSeconds(delayInSeconds);
+    }
+
     public void startSimulation() {
         if (iotActionsTrigger.getConnectionStatus().equals(AWSIotConnectionStatus.CONNECTED)) {
             LOGGER.info("IoT Device with id {} is already running.", iotActionsTrigger.getClientId());

@@ -9,6 +9,7 @@ public class IoTDeviceBehavior implements DeviceSpecification, PublicationMessag
     private String publishedMessagePayload;
     private String subscribedMessageTopic;
     private String subscribedMessagePayload;
+    private int responseDelayInSeconds;
 
     public DeviceSpecification given() {
         return this;
@@ -30,6 +31,12 @@ public class IoTDeviceBehavior implements DeviceSpecification, PublicationMessag
         } else {
             throw new IllegalStateException("Subscription topic has not been set");
         }
+    }
+
+    @Override
+    public DeviceSpecification withResponseDelay(int seconds) {
+        this.responseDelayInSeconds = seconds;
+        return this;
     }
 
     @Override

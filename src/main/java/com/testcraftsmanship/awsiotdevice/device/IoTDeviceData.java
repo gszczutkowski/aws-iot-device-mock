@@ -12,6 +12,7 @@ public class IoTDeviceData {
     private String publicationMessage = null;
     private String subscribeTopicCondition = null;
     private String subscribeMessageCondition = null;
+    private int responseMessageDelayInSeconds = 0;
 
     public void setPublicationMessage(String message) {
         if (message != null) {
