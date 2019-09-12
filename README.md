@@ -91,4 +91,25 @@ assertTrue(deviceSimulator.doesExpectedMessageReachedSubscribedTopic());
 deviceSimulator.stop();
 ```
 
+When we want our response message to be send with given delay then we have to add given() section like shown below:
+```java
+deviceSimulator
+        .given()
+            .responseMessageDelay(2)
+        .when()
+            .messageTopic("tc/flatkrk100/settings/set")
+            .subscribeMessageBody("{'id': 2, 'fan': 1}")
+        .then()
+            .publishTo("tc/flatkrk100/settings/report")
+            .publishMessageBody("{'id': 2, 'fan': 1, 'light': 10, 'door':1}");
+
+deviceSimulator.start();
+
+    // here should be test of application in which message {'id': 2, 'fan': 1} should be send to
+    // tc/flatkrk100/settings/set topic and the answer of the IoT device should be resend to
+    // tc/flatkrk100/settings/report topic with message {'id': 2, 'fan': 1, 'light': 10, 'door':1}
+    // two seconds after receiving the message
+
+deviceSimulator.stop();
+```
 

@@ -40,6 +40,7 @@ public class IoTDeviceListener extends AWSIotTopic {
                         message.getStringPayload(), true);
                 String updatedPublicationMessage = messageParser
                         .updateJsonParamsWithValues(iotDeviceData.getPublicationMessage()).toString();
+                waitForPublishingResponse();
                 publishIotDeviceData(iotDeviceData.getPublicationTopic(), updatedPublicationMessage);
             } catch (PayloadMappingException e) {
                 LOGGER.warn(e.getMessage());
@@ -47,6 +48,7 @@ public class IoTDeviceListener extends AWSIotTopic {
         } else if (subscriptionConditionsMet(message) && publicationConditionsMet()) {
             LOGGER.info("Subscribed on topic {}, has received the message {}",
                     message.getTopic(), minimize(message.getStringPayload()));
+            waitForPublishingResponse();
             publishIotDeviceData();
         } else if (subscriptionConditionsMet(message) && !publicationConditionsMet()) {
             LOGGER.info("Subscribed on topic {}, has received the message {}",
@@ -82,6 +84,14 @@ public class IoTDeviceListener extends AWSIotTopic {
     void disconnectPublisher() throws AWSIotException {
         if (iotPublisher.getConnectionStatus().equals(AWSIotConnectionStatus.CONNECTED)) {
             iotPublisher.disconnect();
+        }
+    }
+
+    private void waitForPublishingResponse() {
+        try {
+            Thread.sleep(iotDeviceData.getResponseMessageDelayInSeconds());
+        } catch (InterruptedException e) {
+            e.printStackTrace();
         }
     }
 

@@ -5,4 +5,5 @@ public interface DeviceSpecification {
 
     SubscriptionMessageSpecification when();
 
+    DeviceSpecification withResponseDelay(int seconds);
 }
