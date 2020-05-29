@@ -10,10 +10,9 @@ AWS-IoT-Device-Mock is a java library which can mock AWS IoT devices connected t
 To create IoTDeviceSimulator three arguments have to be passed to the constructor: AWS IoT endpoint, AWS Access Key Id and AWS Secret Access Key of the AWS user 
 ```java
 IoTDeviceSimulator deviceSimulator = new IoTDeviceSimulator(
-             new Regions("your-aws-region"),
-             "your-aws-iot-client-endpoint",
-             "ssm-param-for-access-key",
-             "ssm-param-for-secret-key");
+             "your-aws-iot-endpoint",
+             "your-aws-access-key-id",
+             "your-aws-secret-access-key");
 ```
 
 Below is the example use of the IoT Device Mock which will publish {'id': 2, 'fan': 1, 'light': 10, 'door':1} to topic 
