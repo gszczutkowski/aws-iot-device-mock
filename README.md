@@ -7,7 +7,7 @@ AWS-IoT-Device-Mock is a java library which can mock AWS IoT devices connected t
 
 ### How to use it
 
-To create IoTDeviceSimulator four arguments have to be passed to the construction: you AWS region, endpoint of your AWS IoT Client, SSM parameter which stores Access Key and SSM parameter which stores Secret Key 
+To create IoTDeviceSimulator three arguments have to be passed to the constructor: AWS IoT endpoint, AWS Access Key Id and AWS Secret Access Key of the AWS user 
 ```java
 IoTDeviceSimulator deviceSimulator = new IoTDeviceSimulator(
              new Regions("your-aws-region"),
@@ -91,7 +91,21 @@ assertTrue(deviceSimulator.doesExpectedMessageReachedSubscribedTopic());
 deviceSimulator.stop();
 ```
 
+The next example ilustrate how just publish the message {'id': 2, 'fan': 1, 'light': 10, 'door':1} to topic 'tc/flatkrk100/settings/report'. 
+
+```java
+deviceSimulator
+        .then()
+            .publishTo("tc/flatkrk100/settings/report")
+            .publishMessageBody("{'id': 2, 'fan': 1, 'light': 10, 'door':1}");
+
+deviceSimulator.publishOnce();
+
+    // here should be tested that application which uses MQTT queue reacted correctly on published message
+```
+
 When we want our response message to be send with given delay then we have to add given() section like shown below:
+
 ```java
 deviceSimulator
         .given()

@@ -1,9 +1,12 @@
 package com.testcraftsmanship.awsiotdevice.iotsettings;
 
 import lombok.Getter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Getter
 public class IoTDeviceBehavior implements DeviceSpecification, PublicationMessageSpecification, SubscriptionMessageSpecification {
+    private static final Logger LOGGER = LoggerFactory.getLogger(IoTDeviceBehavior.class);
     private String deviceSubscriptionTopic;
     private String publishedMessageTopic;
     private String publishedMessagePayload;
@@ -29,7 +32,8 @@ public class IoTDeviceBehavior implements DeviceSpecification, PublicationMessag
         } else if (subscribedMessageTopic != null) {
             return subscribedMessageTopic;
         } else {
-            throw new IllegalStateException("Subscription topic has not been set");
+            LOGGER.info("There is no subscription topic so device is run in publishing only mode.");
+            return null;
         }
     }
 

@@ -1,5 +1,7 @@
 package com.testcraftsmanship.awsiotdevice.parser;
 
+import com.amazonaws.regions.Regions;
+import com.testcraftsmanship.awsiotdevice.IoTDeviceSimulator;
 import org.json.JSONObject;
 import org.junit.Test;
 import org.skyscreamer.jsonassert.JSONAssert;
