@@ -16,20 +16,20 @@ public class IoTDevice {
     private IoTDeviceListener ioTDeviceListener;
     private IoTDeviceData iotDeviceData;
     private final String mqttClientEndpoint;
-    private final String keyStoreSsmParamValue;
-    private final String keyPasswordSsmParamValue;
+    private final String awsAccessKeyId;
+    private final String awsSecretAccessKey;
     @Getter
     private IoTDeviceState state;
 
-    public IoTDevice(String clientEndpoint, String keyStoreSsmParamValue, String keyPasswordSsmParamValue) {
+    public IoTDevice(String clientEndpoint, String awsAccessKeyId, String awsSecretAccessKey) {
         String awsClientId = StringOperations.generateAwsClientId();
         iotDeviceData = new IoTDeviceData();
         this.mqttClientEndpoint = clientEndpoint;
-        this.keyStoreSsmParamValue = keyStoreSsmParamValue;
-        this.keyPasswordSsmParamValue = keyPasswordSsmParamValue;
+        this.awsAccessKeyId = awsAccessKeyId;
+        this.awsSecretAccessKey = awsSecretAccessKey;
         this.iotActionsTrigger = new AWSIotMqttClient(clientEndpoint, awsClientId,
-                keyStoreSsmParamValue,
-                keyPasswordSsmParamValue);
+                awsAccessKeyId,
+                awsSecretAccessKey);
         LOGGER.info("Created IoTDeviceListener with client id: {}", awsClientId);
     }
 
@@ -54,7 +54,7 @@ public class IoTDevice {
         iotDeviceData.setResponseMessageDelayInSeconds(delayInSeconds);
     }
 
-    public void startSimulation() {
+    public synchronized void startSimulation() {
         if (iotActionsTrigger.getConnectionStatus().equals(AWSIotConnectionStatus.CONNECTED)) {
             LOGGER.info("IoT Device with id {} is already running.", iotActionsTrigger.getClientId());
             return;
@@ -63,7 +63,7 @@ public class IoTDevice {
             iotActionsTrigger.connect();
             if (isDeviceRespondingOnMessage()) {
                 ioTDeviceListener = new IoTDeviceListener(iotDeviceData,
-                        mqttClientEndpoint, keyStoreSsmParamValue, keyPasswordSsmParamValue);
+                        mqttClientEndpoint, awsAccessKeyId, awsSecretAccessKey);
                 iotActionsTrigger.subscribe(ioTDeviceListener);
                 ioTDeviceListener.connectPublisher();
                 state = IoTDeviceState.RUNNING;
@@ -73,7 +73,7 @@ public class IoTDevice {
                 LOGGER.info("Start IoT Device simulation in Publish mode");
             } else if (isDeviceSubscribedOnly()) {
                 ioTDeviceListener = new IoTDeviceListener(iotDeviceData,
-                        mqttClientEndpoint, keyStoreSsmParamValue, keyPasswordSsmParamValue);
+                        mqttClientEndpoint, awsAccessKeyId, awsSecretAccessKey);
                 iotActionsTrigger.subscribe(ioTDeviceListener);
                 state = IoTDeviceState.RUNNING;
                 LOGGER.info("Start IoT Device simulation in Subscribing mode");
@@ -83,7 +83,7 @@ public class IoTDevice {
         }
     }
 
-    public void stopSimulation() {
+    public synchronized void stopSimulation() {
         try {
             if (ioTDeviceListener != null) {
                 ioTDeviceListener.disconnectPublisher();
@@ -96,6 +96,11 @@ public class IoTDevice {
         } catch (AWSIotException e) {
             throw new AwsException("Exception while stopping IoT Device simulator", e);
         }
+    }
+
+    public void closeSimulation() {
+        stopSimulation();
+        this.iotDeviceData = new IoTDeviceData();
     }
 
     public void publishMessage() {
