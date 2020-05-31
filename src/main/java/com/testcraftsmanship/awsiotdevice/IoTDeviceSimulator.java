@@ -1,5 +1,6 @@
 package com.testcraftsmanship.awsiotdevice;
 
+import com.amazonaws.auth.profile.ProfileCredentialsProvider;
 import com.amazonaws.regions.Regions;
 import com.testcraftsmanship.awsiotdevice.device.IoTDevice;
 import com.testcraftsmanship.awsiotdevice.device.IoTDeviceState;
@@ -17,6 +18,16 @@ public class IoTDeviceSimulator extends IoTDeviceBehavior implements DeviceRunna
     private final String awsAccessKeyId;
     private final String awsSecretAccessKey;
 
+    /**
+     * Create new instance of IoTDeviceSimulator which uses AWS credentials(AWS Access Key Id, AWS Secret Access Key)
+     * which are saved in AWS parameter store in parameters passed as an arguments of this constructor. To extract values
+     * of those parameters we are using Default AWS Credential Provider Chain.
+     *
+     * @param clientEndpoint of IoT service to which IoTDeviceSimulator will be connecting to
+     * @param awsSsmRegion where parameters are stored
+     * @param awsAccessKeyIdSsmParam name of the parameter which stores AWS Access Key Id
+     * @param awsSecretAccessKeySsmParam name of the parameter which stores AWS Secret Access Key
+     */
     public IoTDeviceSimulator(String clientEndpoint, Regions awsSsmRegion,
                               String awsAccessKeyIdSsmParam, String awsSecretAccessKeySsmParam) {
         this.mqttClientEndpoint = clientEndpoint;
@@ -24,10 +35,35 @@ public class IoTDeviceSimulator extends IoTDeviceBehavior implements DeviceRunna
         this.awsSecretAccessKey = getSsmParameterValue(awsSsmRegion, awsSecretAccessKeySsmParam);
     }
 
+    /**
+     * Create new instance of IoTDeviceSimulator which uses AWS credentials(AWS Access Key Id, AWS Secret Access Key)
+     * passed as an arguments of the constructor.
+     *
+     * @param clientEndpoint of IoT service to which IoTDeviceSimulator will be connecting to
+     * @param awsAccessKeyId value of the AWS Access Key Id
+     * @param awsSecretAccessKey value of the AWS Secret Access Key
+     */
     public IoTDeviceSimulator(String clientEndpoint, String awsAccessKeyId, String awsSecretAccessKey) {
         this.mqttClientEndpoint = clientEndpoint;
         this.awsAccessKeyId = awsAccessKeyId;
         this.awsSecretAccessKey = awsSecretAccessKey;
+    }
+
+    /**
+     * Create new instance of IoTDeviceSimulator which uses default AWS credentials typically located at ~/.aws/credentials
+     * and shared by many of the AWS SDKs and by the AWS CLI. The AWS SDK for Java uses the ProfileCredentialsProvider to
+     * load these credentials in this constructor.
+     *
+     * You can create a credentials file by using the aws configure command provided by the AWS CLI, or you can create it
+     * by editing the file with a text editor. For information about the credentials file format, see AWS Credentials File Format.
+     *
+     * @param clientEndpoint of IoT service to which IoTDeviceSimulator will be connecting to
+     */
+    public IoTDeviceSimulator(String clientEndpoint) {
+        ProfileCredentialsProvider credentialsProvider = new ProfileCredentialsProvider();
+        this.mqttClientEndpoint = clientEndpoint;
+        this.awsAccessKeyId = credentialsProvider.getCredentials().getAWSAccessKeyId();
+        this.awsSecretAccessKey = credentialsProvider.getCredentials().getAWSSecretKey();
     }
 
     /**
