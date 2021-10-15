@@ -1,11 +1,15 @@
-# AWS-IoT-Device-Mock
+[![No Maintenance Intended](http://unmaintained.tech/badge.svg)](http://unmaintained.tech/)
+# DEPRECATED
+This is no longer supported, please consider using [iot-simulator](https://github.com/gszczutkowski/iot-simulator) instead.
+
+## AWS-IoT-Device-Mock
 
 AWS-IoT-Device-Mock is a java library which can mock AWS IoT devices connected to MQTT in your tests. You can easily define behaviors of this device:
 
   - publish defined message to MQTT topic when triggered
   - publish defined message when other defined message reach other MQTT topic
 
-### How to use it
+#### How to use it
 
 To create IoTDeviceSimulator three arguments have to be passed to the constructor: AWS IoT endpoint, AWS Access Key Id and AWS Secret Access Key of the AWS user 
 ```java
@@ -125,4 +129,3 @@ deviceSimulator.start();
 
 deviceSimulator.stop();
 ```
-
